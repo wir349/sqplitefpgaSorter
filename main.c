@@ -288,7 +288,10 @@ int sqlite3VdbeSorterWrite(
 ){
     int rc = SQLITE_OK;             /* Return Code */
     char* firstDataPointer = (pVal->zMalloc + 1);
-    fpgaSorterInsert(firstDataPointer, (int)(*firstDataPointer)+1);
+    
+    int dummyKey = 0;
+    
+    fpgaSorterInsert(dummyKey, firstDataPointer, (int)(*firstDataPointer)+1);
 
     return rc;
 }
