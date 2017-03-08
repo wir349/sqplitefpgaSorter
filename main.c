@@ -372,15 +372,7 @@ int main() {
     for (int i = 0; i < 7; i++) {
         Mem mem = createEmptyMemoryObject();
 
-        for (int j = 0; j < 10; ++j) {
-            printf("%d*", buffer[j]);
-        }
-        printf("\n");
-        int n = sprintf (buffer, "%x", (i+1) * 10);
-        for (int j = 0; j < 10; ++j) {
-            printf("%d*", buffer[j]);
-        }
-        printf("\n");
+        buffer[0] = (i+1) * 10;
         addRowToMemoryObject(&mem, buffer, 1);
 //        debugPrintfMemStr(mem);
         sqlite3VdbeSorterWrite(0, &mem);
@@ -392,7 +384,7 @@ int main() {
     }
     sqlite3VdbeSorterClose(0, 0);
     sqlite3VdbeSorterReset(0, 0);
-    printf("Hello, World!\n");
+    printf("\nHello, World!\n");
 
     return 0;
 }
@@ -407,7 +399,7 @@ Mem createEmptyMemoryObject() {
 }
 
 void addRowToMemoryObject(Mem *mem, char * rowdata, int rowsize) {
-    printf("%d%d\n", rowdata[0], rowdata[1]);
+//    printf("%d%d\n", rowdata[0], rowdata[1]);
     if (mem->n == 0) {
         mem->n = 2 + rowsize;
         mem->szMalloc = 1200;

@@ -10,6 +10,6 @@
 ** Add a record to the sorter.
 */
 void fpgaSorterInsert(
-        char* row_bytes,                       /* Memory cell containing record */
+        char row_bytes[],                    /* Memory cell containing record */
         int size                             /* Size of Byte array */
 );
