@@ -3,12 +3,22 @@
 *	UCLA WI2017
 *	Krit Sae Fang
 */
+#include <stdbool.h>
+
 #ifndef FPGASORTER_FPGASORTER_H
-#define FPGASORTER_FPGASORTER_H
+#define FPGASORTER_FPGASORTER_H "fpgaSorter.h"
 
 #endif //FPGASORTER_FPGASORTER_H
 
-class fpgaSorter {
+// Constants
+#define ListSize 1000					// Assumed list size (Depends on available BRAM blocks)
+#define DataSize 10					// 80 bits for comparision data (10 characters)
+#define StructSize 12
+
+// Constants
+#define InputBufferSize 400			// Used to save memory
+#define InputBufferMin 200				// Minimum in buffer before a refill
+
 	//---------------------------------------------------------------------------------------------
 	// Declarations and stuff
 	//---------------------------------------------------------------------------------------------
@@ -20,7 +30,7 @@ class fpgaSorter {
 	struct comparePair{
 		int key;				//ptr to actual object
 		char data[DataSize];	//Data to compare
-	}
+	};
 
 	//---------------------------------------------------------------------------------------------
 	// "Public" functions and methods
@@ -37,14 +47,10 @@ class fpgaSorter {
 	*	Value is kept off BRAM until ready.
 	*/
 	void fpgaSorterInsert(
-		char *data,
-		int size
-	);
-	/*void fpgaSorterInsert(
 		int key,
 		char *data,
 		int size
-	);*/
+	);
 
 	/*
 	*	Quick reset
@@ -93,7 +99,7 @@ class fpgaSorter {
 	*	Sorted array overwrites given array
 	*/
 	static void hlsLinearSort(
-		char *p,
+		comparePair *p,
 		int pSize
 	);
 
@@ -114,6 +120,15 @@ class fpgaSorter {
 	*	Helper function for checking for empty cell.
 	*	Makes life easier since I don't have to do multiple nests after nests
 	*/
-	static bool arrayCellIsEmpty(i,j);
+	static bool arrayCellIsEmpty(int i, int j);
 
-} // End fpga sorter class
+	/*
+	*	Merge sort implementation for FPGAs
+	*/
+	static void hlsMergeSort(
+		char *p1,
+		int p1Size,
+		char *p2,
+		int p2Size,
+		char *pFinal
+	);
