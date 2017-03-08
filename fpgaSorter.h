@@ -37,10 +37,14 @@ class fpgaSorter {
 	*	Value is kept off BRAM until ready.
 	*/
 	void fpgaSorterInsert(
-		int key,
 		char *data,
 		int size
 	);
+	/*void fpgaSorterInsert(
+		int key,
+		char *data,
+		int size
+	);*/
 
 	/*
 	*	Quick reset
