@@ -67,8 +67,12 @@ class fpgaSorter {
 	*	Adds value to be linear sorted
 	*	Value is kept off BRAM until ready.
 	*/
-	void fpgaSorterInsert(
+	/*void fpgaSorterInsert(
 		int key,
+		char *data,
+		int size
+	*/)
+	void fpgaSorterInsert(
 		char *data,
 		int size
 	)
@@ -79,15 +83,15 @@ class fpgaSorter {
 		}
 
 		// Copy in the key/pointer
-		workingArrayLinear[workingArrayLinearSize].key = key;
+		// workingArrayLinear[workingArrayLinearSize].key = key;
 		
 		// Copy in data to compare
-		if(size > 10){
-			memcpy[workingArrayLinear[workingArrayLinearSize].data, data, DataSize];
+		if((size - 1) > 10){
+			memcpy[workingArrayLinear[workingArrayLinearSize].data, data + 1, DataSize];
 		} else {
-			memcpy[workingArrayLinear[workingArrayLinearSize].data, data, size];
+			memcpy[workingArrayLinear[workingArrayLinearSize].data, data + 1, (size - 1)];
 			// Pad out remaining values (if any)
-			memcpy[workingArrayLinear[workingArrayLinearSize].data + size, blankArray, DataSize - size];
+			memcpy[workingArrayLinear[workingArrayLinearSize].data + (size - 1), blankArray, DataSize - (size - 1)];
 		}
 		
 		// Add value to local counter
