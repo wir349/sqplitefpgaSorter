@@ -3,42 +3,34 @@
 *	UCLA WI2017
 *	Krit Sae Fang
 */
-#include <fpgaSorter.h>
+#include "fpgaSorter.h"
+#include <stdbool.h>
+#include <string.h>
 
 // Constants
-#define ListSize 1000;					// Assumed list size (Depends on available BRAM blocks)
-#define DataSize 10;					// 80 bits for comparision data (10 characters)
-#define StructSize 12;
+#define ListSize 1000					// Assumed list size (Depends on available BRAM blocks)
+#define DataSize 10					// 80 bits for comparision data (10 characters)
+#define StructSize 12
 
 // Constants
-#define InputBufferSize 400;			// Used to save memory
-#define InputBufferMin 200;				// Minimum in buffer before a refill
+#define InputBufferSize 400			// Used to save memory
+#define InputBufferMin 200				// Minimum in buffer before a refill
 
-class fpgaSorter {
 	
 	//---------------------------------------------------------------------------------------------
 	// Declarations and stuff
 	//---------------------------------------------------------------------------------------------
 
-	// Struct declarations
-	typedef struct comparePair comparePair;	// Structured pair of ID and comparision data
-
-	// Struct for our ptr/compare value pair.
-	struct comparePair{
-		int key;				//ptr to actual object
-		char data[DataSize];	//Data to compare
-	}
-
 	// Saved array for working with (kept on disk/DRAM)
-	static char blankArray[DataSize];
+	char blankArray[DataSize];
 	
 	// General function counters and keepers
-	static bool isSorted;
+	bool isSorted;
 
-	static comparePair workingArrayLinear[ListSize];
-	static int workingArrayLinearSize;
+	comparePair workingArrayLinear[ListSize];
+	int workingArrayLinearSize;
 	
-	static int workingArrayLinearReadPos;
+	int workingArrayLinearReadPos;
 
 	//---------------------------------------------------------------------------------------------
 	// "Public" functions and methods
@@ -52,7 +44,7 @@ class fpgaSorter {
 	{
 		// Set up blank array.
 		for(int i=0; i < DataSize ; i++){
-			blankArray[i] = NULL;
+			blankArray[i] = '\0';
 		}
 		
 		// Flag set
@@ -67,12 +59,8 @@ class fpgaSorter {
 	*	Adds value to be linear sorted
 	*	Value is kept off BRAM until ready.
 	*/
-	/*void fpgaSorterInsert(
-		int key,
-		char *data,
-		int size
-	*/)
 	void fpgaSorterInsert(
+		int key,
 		char *data,
 		int size
 	)
@@ -83,15 +71,15 @@ class fpgaSorter {
 		}
 
 		// Copy in the key/pointer
-		// workingArrayLinear[workingArrayLinearSize].key = key;
+		workingArrayLinear[workingArrayLinearSize].key = key;
 		
 		// Copy in data to compare
-		if((size - 1) > 10){
-			memcpy[workingArrayLinear[workingArrayLinearSize].data, data + 1, DataSize];
+		if(size > 10){
+			memcpy(workingArrayLinear[workingArrayLinearSize].data, data, DataSize);
 		} else {
-			memcpy[workingArrayLinear[workingArrayLinearSize].data, data + 1, (size - 1)];
+			memcpy(workingArrayLinear[workingArrayLinearSize].data, data, size);
 			// Pad out remaining values (if any)
-			memcpy[workingArrayLinear[workingArrayLinearSize].data + (size - 1), blankArray, DataSize - (size - 1)];
+			memcpy(workingArrayLinear[workingArrayLinearSize].data + size, blankArray, DataSize - size);
 		}
 		
 		// Add value to local counter
@@ -127,7 +115,7 @@ class fpgaSorter {
 	*/
 	void fpgaSorterGetLinearResultArray(char *returnArray){
 		if(isSorted){
-			memcpy[returnArray, workingArrayLinear, workingArrayLinearSize*StructSize];
+			memcpy(returnArray, workingArrayLinear, workingArrayLinearSize*StructSize);
 		}
 	}
 	
@@ -169,8 +157,8 @@ class fpgaSorter {
 	*	Maximum value that can be sorted is determined by constant ListSize
 	*	Sorted array overwrites given array
 	*/
-	static void hlsLinearSort(
-		char *p,
+	void hlsLinearSort(
+		comparePair *p,
 		int pSize
 	)
 	{
@@ -210,7 +198,7 @@ class fpgaSorter {
 				}
 				
 				// If we have an empty cell and the item above is smaller...
-				if(arrayCellIsEmpty(j,i) && dataCompare(pLocal[i], pFinal[j-1]){
+				if(arrayCellIsEmpty(j,i) && dataCompare(pLocal[i], pFinal[j-1])){
 					pFinalBuffer[j] = pLocal[i];
 				}
 			}
@@ -233,24 +221,111 @@ class fpgaSorter {
 	*	Helper function for comparing values in the struct
 	*	Bitwise, byte by byte via char
 	*/
-	static bool dataCompare(comparePair x, comparePair y){
+	bool dataCompare(comparePair x, comparePair y){
 		for(int i = 0; i < DataSize; i++){
 			if(x.data[i] > y.data[i]){
 				return true;
 			}
 		}
-		return false
+		return false;
 	}
 
 	/*
 	*	Helper function for checking for empty cell.
 	*	Makes life easier since I don't have to do multiple nests after nests
 	*/
-	static bool arrayCellIsEmpty(i,j){
+	bool arrayCellIsEmpty(int i,int j){
 		if(i >= j){
 			return true;
 		}
 		return false;
 	}
 
-} // End fpga sorter class
+	/*
+	*	Merge sort implementation for FPGAs
+	*	INCOMPLETE CODE
+	*/
+	static void hlsMergeSort(
+		char *p1,
+		int p1Size,
+		char *p2,
+		int p2Size,
+		char *pFinal
+	)
+	{
+		//#pragma HLS
+		
+		int currentFinalLocalSize;
+		int currentFinalSize;
+		int p1LocalSize;
+		int p2LocalSize;
+		int p1Remain;
+		int p2Remain;
+		int p1Moves;
+		int p2Moves;
+		
+		// Localized input array. 
+		comparePair p1Local[InputBufferSize];
+		comparePair p2Local[InputBufferSize];
+		//comparePair p1LocalBuffer[InputBufferMin];
+		//comparePair p2LocalBugger[InputBufferMin];
+		
+		// Localized result arrays
+		comparePair pFinalLocal[ListSize];
+		
+		// Initiate remaining counters
+		p1Remain = p1Size;
+		p2Remain = p2Size;
+		
+		// Initiate merge counters
+		p1LocalSize = 0;
+		p2LocalSize = 0;
+		p1Moves = 0;
+		p2Moves = 0;
+		currentFinalLocalSize = 0;
+		currentFinalSize = 0;
+		
+		// Loop for merge sorting
+		while(p1Remain > 0 || p2Remain > 0){
+			
+			// Move local final list to DRAM if filled
+			if(currentFinalLocalSize > ListSize - 1){
+				memcpy(pFinal + (currentFinalSize*StructSize), pFinalLocal, ListSize*StructSize);
+				currentFinalSize = currentFinalSize + currentFinalLocalSize;
+			}
+			
+			// Fill local p1 if empty
+			if(p1Remain > 0 && p1LocalSize == 0){
+				if(p1Remain < InputBufferSize){
+					memcpy(p1Local, p1 + (p1Moves * DataSize * ListSize), InputBufferSize*StructSize);
+					p1Remain = p1Remain - InputBufferSize;
+					p1LocalSize = InputBufferSize;
+				} else {
+					memcpy(p1Local, p1 + (p1Moves * DataSize * ListSize), p1Remain*StructSize);
+					p1Remain = 0;
+					p1LocalSize = p1Remain;
+				}
+				p1Moves++;
+			}
+			
+			// Fill local p2 if empty
+			if(p2Remain > 0 && p2LocalSize == 0){
+				if(p2Remain < InputBufferSize){
+					memcpy(p1Local, p2 + (p2Moves * DataSize * ListSize), InputBufferSize*StructSize);
+					p2Remain = p2Remain - InputBufferSize;
+					p2LocalSize = InputBufferSize;
+				} else {
+					memcpy(p1Local, p2 + (p2Moves * DataSize * ListSize), p1Remain*StructSize);
+					p2Remain = 0;
+					p2LocalSize = p2Remain;
+				}
+				p2Moves++;
+			}
+		}
+		
+		// Copy into local BRAM.
+		memcpy(p1Local, p1, p1Size*StructSize);
+		memcpy(p2Local, p2, p2Size*StructSize);
+		
+		
+	}
