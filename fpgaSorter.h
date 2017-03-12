@@ -12,7 +12,7 @@
 #endif //FPGASORTER_FPGASORTER_H
 
 // Constants
-#define ListSize 1000                    // Assumed list size (Depends on available BRAM blocks)
+#define ListSize 1000                   // Assumed list size (Depends on available BRAM blocks)
 #define DataSize 10                    // 80 bits for comparision data (10 characters)
 #define StructSize (DataSize + sizeof(int8_t))
 
