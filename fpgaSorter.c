@@ -154,7 +154,7 @@ void hlsLinearSort(
         comparePair *p,
         int pSize
 ) {
-    #pragma HLS INTERFACE m_axi port=p offset=slave bundle=gmem
+    #pragma HLS INTERFACE m_axi port=p bundle=gmem
     #pragma HLS INTERFACE s_axilite port=p bundle=control
     #pragma HLS INTERFACE s_axilite port=pSize bundle=control
     #pragma HLS INTERFACE s_axilite port=return bundle=control
@@ -163,15 +163,12 @@ void hlsLinearSort(
     // Localized input array.
     comparePair pLocal[ListSize];
     //#pragma HLS DATA_PACK variable=pLocal
-    // comparePair pLocal[InputBufferSize];
 
     // Localized result arrays
     comparePair pFinal[ListSize];
-    //#pragma HLS DATA_PACK variable=pFinal
-    //#pragma HLS ARRAY_PARTITION variable=pFinal complete dim=1
+    #pragma HLS ARRAY_PARTITION variable=pFinal complete dim=1
     comparePair pFinalBuffer[ListSize];
-    //#pragma HLS DATA_PACK variable=pFinalBuffer
-    //#pragma HLS ARRAY_PARTITION variable=pFinalBuffer complete dim=1
+    #pragma HLS ARRAY_PARTITION variable=pFinalBuffer complete dim=1
 
     //DEBUG
     //printf("\nENTERING SORT. 0 values are as follows:");
@@ -180,12 +177,7 @@ void hlsLinearSort(
 
     // Copy into local BRAM.
     copyArrayBorder(p, 0, pLocal, 0, pSize * StructSize);
-    /*    for (int x = 0; x < pSize; x++) {
-        pLocal[x].key = p[x].key;
-        for (int y = 0; y < DataSize; y++) {
-            pLocal[x].data[y] = p[x].data[y];
-        }
-    }*/
+
 
     // First value handling. Makes life easier with the loop
     pFinal[0] = pLocal[0];
@@ -196,47 +188,44 @@ void hlsLinearSort(
     //printf("\npLocal[1] has key %u and value %s", pLocal[1].key, pLocal[1].data);
     //printf("\npFinal[0] has key %u and value %s", pFinal[0].key, pFinal[0].data);
 
-    for (int i = 0; i < pSize; i++) {
+    for (int i = 1; i < pSize; i++) {
         // This loop cannot be unrolled or pipelined without collision or other issues
         // Looping through the insertion
-        for (int j = 0; j < pSize; j++) {
-            //#pragma HLS UNROLL
+
+        comparePair pLocal_i=pLocal[i];
+
+        for (int j = 1; j < ListSize; j++) {
+            #pragma HLS UNROLL
+
+            // Localize to registers
+            comparePair pFinal_j = pFinal[j];
+            comparePair pFinal_jn1 = pFinal[j - 1];
 
             // If the item in this cell is bigger and not empty...
-            if (dataCompare(pFinal[j], pLocal[i]) && !arrayCellIsEmpty(j, i)) {
+            if (dataCompare(pFinal_j, pLocal_i) && !arrayCellIsEmpty(j, i)) {
                 // Cascade move down to open up the slot we need
-                pFinalBuffer[j + 1] = pFinal[j];
+                if (j<(ListSize - 1)) {
+                    pFinalBuffer[j + 1] = pFinal_j;
+                }
 
                 // If the item above us is smaller than the incoming value
                 // Copy our value in
-                if (dataCompare(pLocal[i], pFinal[j - 1])) {
-                    pFinalBuffer[j] = pLocal[i];
+                if (dataCompare(pLocal_i, pFinal_jn1)) {
+                    pFinalBuffer[j] = pLocal_i;
                 }
             }
 
             // If we have an empty cell and the item above is smaller...
-            if (arrayCellIsEmpty(j, i) && dataCompare(pLocal[i], pFinal[j - 1])) {
-                pFinalBuffer[j] = pLocal[i];
+            if (arrayCellIsEmpty(j, i) && dataCompare(pLocal_i, pFinal_jn1)) {
+                pFinalBuffer[j] = pLocal_i;
             }
         }
         // Copy values from our safety buffer back into the working array.
         copyArrayComparePair(pFinalBuffer, 0, pLocal, 0, pSize);
-        /*        for (int x = 0; x < pSize; x++) {
-            pLocal[x].key = pFinalBuffer[x].key;
-            for (int y = 0; y < DataSize; y++) {
-                pLocal[x].data[y] = pFinalBuffer[x].data[y];
-            }
-        }*/
     }
 
     // Copy back into DRAM for transfer back into CPU processing
     copyArrayBorder(pLocal, 0, p, 0, pSize * StructSize);
-    /*    for (int a = 0; a < pSize; a++) {
-        p[a].key = pLocal[a].key;
-        for (int b = 0; b < DataSize; b++) {
-            p[a].data[b] = pLocal[a].data[b];
-        }
-    }*/
 }
 
 /*
@@ -262,8 +251,10 @@ void copyArrayComparePair(comparePair *source, int sourceOffset, comparePair *de
         //DEBUG
         //printf("\nCopying comparePair array, size %u", size);
 
-        destination[i + destOffset].key = source[i + sourceOffset].key;
-        copyArray(source[i + sourceOffset].data, 0, destination[i + destOffset].data, 0, DataSize);
+        //destination[i + destOffset].key = source[i + sourceOffset].key;
+        //copyArray(source[i + sourceOffset].data, 0, destination[i + destOffset].data, 0, DataSize);
+
+        destination[i + destOffset] = source[i + sourceOffset];
 
         //DEBUG
         //printf("\nCopying comparePair array, pos %i from %s to %s", i, source[i + sourceOffset].data,destination[i + destOffset].data);
