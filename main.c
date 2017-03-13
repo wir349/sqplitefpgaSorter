@@ -288,9 +288,9 @@ int sqlite3VdbeSorterWrite(
 ){
     int rc = SQLITE_OK;             /* Return Code */
     char* firstDataPointer = (pVal->zMalloc + 1);
-    
+
     int dummyKey = 0;
-    
+
     fpgaSorterInsert(dummyKey, firstDataPointer, (int)(*firstDataPointer)+1);
 
     return rc;
@@ -305,6 +305,8 @@ int sqlite3VdbeSorterWrite(
 int sqlite3VdbeSorterRewind(const VdbeCursor *pCsr, int *pbEof){
     int rc = SQLITE_OK;             /* Return code */
 
+    fpgaSorterSortLinear();
+
     return rc;
 }
 
@@ -314,6 +316,9 @@ int sqlite3VdbeSorterRewind(const VdbeCursor *pCsr, int *pbEof){
 int sqlite3VdbeSorterNext(sqlite3 *db, const VdbeCursor *pCsr, int *pbEof){
     VdbeSorter *pSorter;
     int rc;                         /* Return code */
+
+    int key;
+    key = fpgaSorterGetLinearResultNext();
 
     return rc;
 }
