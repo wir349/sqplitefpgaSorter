@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 //---------------------------------------------------------------------------------------------
 // Declarations and stuff
@@ -51,22 +52,17 @@ void fpgaSorterInsert(
         return;
     }
     //DEBUG
-    char debugData[DataSize];
-    for(int x = 0; x<DataSize; x++){
-        debugData[x] = data[x];
-    }
-    //DEBUG
-    //printf("\nAdding key %u with data value %s", key, data);
-    //printf("\nCopied data value %s", debugData);
+    key = workingArrayLinearSize;
 
     // Copy in the key/pointer
     workingArrayLinear[workingArrayLinearSize].key = key;
 
     // Copy in the data
-    copyArrayOuter(data, 0, workingArrayLinear[workingArrayLinearSize].data, 0, DataSize);
+    copyArrayOuter(data, 0, &workingArrayLinear[workingArrayLinearSize].data, 0, DataSize);
 
     //DEBUG
-    //printf("\nCopied data of %s to %s", data, workingArrayLinear[workingArrayLinearSize].data);
+    workingArrayLinear[workingArrayLinearSize].data = rand();
+    printf("\nAdding key %i with data value %i", key, workingArrayLinear[workingArrayLinearSize].data);
 
     // Add value to local counter
     workingArrayLinearSize++;
@@ -127,7 +123,7 @@ int fpgaSorterGetLinearResultNext() {
         workingArrayLinearReadPos++;
 
         //DEBUG
-        //printf("\nReturning key %u with data value %s", workingArrayLinear[workingArrayLinearReadPos - 1].key, workingArrayLinear[workingArrayLinearReadPos - 1].data);
+        printf("\nReturning key %i with data value %i", workingArrayLinear[workingArrayLinearReadPos - 1].key, workingArrayLinear[workingArrayLinearReadPos - 1].data);
 
         return workingArrayLinear[workingArrayLinearReadPos - 1].key;
     }
@@ -152,13 +148,12 @@ void fpgaSorterResetLinearRead() {
 */
 void hlsLinearSort(
         comparePair *p,
-        int pSize
+        uint16_t pSize
 ) {
     #pragma HLS INTERFACE m_axi port=p bundle=gmem
     #pragma HLS INTERFACE s_axilite port=p bundle=control
     #pragma HLS INTERFACE s_axilite port=pSize bundle=control
     #pragma HLS INTERFACE s_axilite port=return bundle=control
-
 
     // Localized input array.
     comparePair pLocal[ListSize];
@@ -167,13 +162,6 @@ void hlsLinearSort(
     // Localized result arrays
     comparePair pFinal[ListSize];
     #pragma HLS ARRAY_PARTITION variable=pFinal complete dim=1
-    comparePair pFinalBuffer[ListSize];
-    #pragma HLS ARRAY_PARTITION variable=pFinalBuffer complete dim=1
-
-    //DEBUG
-    //printf("\nENTERING SORT. 0 values are as follows:");
-    //printf("\np[0] has key %u and value %s", p[0].key, p[0].data);
-    //printf("\np[1] has key %u and value %s", p[1].key, p[1].data);
 
     // Copy into local BRAM.
     copyArrayBorder(p, 0, pLocal, 0, pSize * StructSize);
@@ -181,47 +169,55 @@ void hlsLinearSort(
 
     // First value handling. Makes life easier with the loop
     pFinal[0] = pLocal[0];
-
-    //DEBUG
-    //printf("\nENTERING SORT LOOPS. 0 values are as follows:");
-    //printf("\npLocal[0] has key %u and value %s", pLocal[0].key, pLocal[0].data);
-    //printf("\npLocal[1] has key %u and value %s", pLocal[1].key, pLocal[1].data);
-    //printf("\npFinal[0] has key %u and value %s", pFinal[0].key, pFinal[0].data);
+    printf("\nInserting to sort key %i with data value %i", pLocal[0].key, pLocal[0].data);
 
     for (int i = 1; i < pSize; i++) {
         // This loop cannot be unrolled or pipelined without collision or other issues
         // Looping through the insertion
 
-        comparePair pLocal_i=pLocal[i];
+        comparePair pLocal_i = pLocal[i];
+        printf("\nInserting to sort key %i with data value %i", pLocal[i].key, pLocal[i].data);
+        printf("\nInserting to sort key %i with data value %i", pLocal_i.key, pLocal_i.data);
 
         for (int j = 1; j < ListSize; j++) {
             #pragma HLS UNROLL
 
             // Localize to registers
-            comparePair pFinal_j = pFinal[j];
             comparePair pFinal_jn1 = pFinal[j - 1];
+            comparePair pFinal_j = pFinal[j];
+            comparePair pFinalBuffer_j;
 
-            // If the item in this cell is bigger and not empty...
-            if (dataCompare(pFinal_j, pLocal_i) && !arrayCellIsEmpty(j, i)) {
-                // Cascade move down to open up the slot we need
-                if (j<(ListSize - 1)) {
-                    pFinalBuffer[j + 1] = pFinal_j;
+            if (arrayCellIsEmpty(j, i) && !arrayCellIsEmpty((j-1), i)){
+                // This is an empty cell, the one above isn't
+                printf("\nDetected empty cell and filled cell above");
+                printf("\nInserting to sort key %i with data value %i", pFinal_jn1.key, pFinal_jn1.data);
+                printf("\nInserting to sort key %i with data value %i", pLocal_i.key, pLocal_i.data);
+                if(dataCompare(pFinal_jn1.data, pLocal_i.data)){
+                    // If the cell above has a larger value than the one coming in, we're receiving it
+                    pFinalBuffer_j = pFinal_jn1;
+
+                } else {
+                    // Else, the cell above is smaller, and the value here sould be the incoming value
+                    pFinalBuffer_j = pLocal_i;
+
                 }
+            } else if(!arrayCellIsEmpty((j-1), i)) {
+                // This cell is occupied (Cell above must be occupied as well
+                printf("\nDetected filled cell");
+                if(dataCompare(pFinal_jn1.data, pLocal_i.data)){
+                    // If the cell above has a larger value than the one coming in, we're receiving it
+                    pFinalBuffer_j = pFinal_jn1;
 
-                // If the item above us is smaller than the incoming value
-                // Copy our value in
-                if (dataCompare(pLocal_i, pFinal_jn1)) {
-                    pFinalBuffer[j] = pLocal_i;
+                } else if(dataCompare(pFinal_j.data, pLocal_i.data)) {
+                    // If the cell above is not larger, and we have a larger value, it should go here
+                    pFinalBuffer_j = pLocal_i;
+
                 }
             }
 
-            // If we have an empty cell and the item above is smaller...
-            if (arrayCellIsEmpty(j, i) && dataCompare(pLocal_i, pFinal_jn1)) {
-                pFinalBuffer[j] = pLocal_i;
-            }
+            pFinal[j] = pFinalBuffer_j;
+
         }
-        // Copy values from our safety buffer back into the working array.
-        copyArrayComparePair(pFinalBuffer, 0, pLocal, 0, pSize);
     }
 
     // Copy back into DRAM for transfer back into CPU processing
@@ -231,9 +227,9 @@ void hlsLinearSort(
 /*
 *	Helper function for copying arrays.
 */
-void copyArray(char *source, int sourceOffset, char *destination, int destOffset, int size) {
+void copyArray(char *source, uint8_t sourceOffset, char *destination, uint8_t destOffset, uint16_t size) {
     #pragma HLS INLINE
-    for (int i = 0; i < size; i++) {
+    for (int16_t i = 0; i < size; i++) {
         //#pragma HLS UNROLL
         destination[i + destOffset] = source[i + sourceOffset];
 
@@ -243,10 +239,10 @@ void copyArray(char *source, int sourceOffset, char *destination, int destOffset
     }
 }
 
-void copyArrayComparePair(comparePair *source, int sourceOffset, comparePair *destination, int destOffset, int size) {
+void copyArrayComparePair(comparePair *source, uint8_t sourceOffset, comparePair *destination, uint8_t destOffset, uint16_t size) {
     #pragma HLS INLINE
     //copyArray((char *) source, sourceOffset, (char*) destination, destOffset, size);
-    for (int i = 0; i < size; i++) {
+    for (int16_t i = 0; i < size; i++) {
         //#pragma HLS UNROLL
         //DEBUG
         //printf("\nCopying comparePair array, size %u", size);
@@ -274,12 +270,23 @@ void copyArrayOuter(void * source, int sourceOffset, void * destination, int des
 *	Helper function for comparing values in the struct
 *	Bitwise, byte by byte via char
 */
-bool dataCompare(comparePair x, comparePair y) {
-    for (int i = 0; i < DataSize; i++) {
-        if (x.data[i] > y.data[i]) {
-            return true;
-        }
+//bool dataCompare(comparePair x, comparePair y) {
+//    for (int i = 0; i < DataSize; i++) {
+//        if (x.data[i] > y.data[i]) {
+//            return true;
+//        }
+//    }
+//    return false;
+//}
+bool dataCompare(int64_t a, int64_t b) {
+    printf("\nCaparing values,x = %i, y = %i", a, b);
+
+    if (a > b) {
+        printf("\nReturned true");
+        return true;
+
     }
+    printf("\nReturned true");
     return false;
 }
 
