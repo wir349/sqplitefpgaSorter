@@ -81,8 +81,9 @@ void fpgaSorterInitialize(){
 
 /*
  *  Adds an entry
+ *  valueToBeSorted
  */
-void fpgaSorterInsert(int key, char * data, int size){
+void fpgaSorterInsert(int64_t valueToBeSorted, uint16_t offsetToData){
     if(workingArrayLinearSize > ListSize){
         return;
     }
@@ -92,14 +93,14 @@ void fpgaSorterInsert(int key, char * data, int size){
     }
 
     //DEBUG
-    key = workingArrayLinearSize;
+//    key = workingArrayLinearSize;
 
-    workingArrayLinear[workingArrayLinearSize].key = key;
-    memcpy(&workingArrayLinear[workingArrayLinearSize].data, data, DataSize);
+    workingArrayLinear[workingArrayLinearSize].key = valueToBeSorted;
+    workingArrayLinear[workingArrayLinearSize].data = offsetToData;
 
     //DEBUG
-    workingArrayLinear[workingArrayLinearSize].data = rand();
-    printf("\nAdding key %d with value %d", key, workingArrayLinear[workingArrayLinearSize].data);
+//    workingArrayLinear[workingArrayLinearSize].data = rand();
+    printf("\nAdding key %d with value %d", workingArrayLinear[workingArrayLinearSize].key, workingArrayLinear[workingArrayLinearSize].data);
 
     workingArrayLinearSize++;
 }

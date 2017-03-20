@@ -26,7 +26,7 @@ void merge_up(int *arr, int n);
 void merge_down(int *arr, int n);
 void do_sort(int * arr, int n);
 void fpgaSorterInitialize();
-void fpgaSorterInsert(int key, char * data, int size);
+void fpgaSorterInsert(int64_t valueToBeSorted, uint16_t offsetToData);
 void fpgaSorterSortLinear();
 int fpgaSorterGetLinearResultNext();
 void hlsLinearSort(comparePair * workingArray, int inputSize);
