@@ -80,33 +80,35 @@ void hlsLinearSort(comparePair * workingArray, int16_t inputSize){
 
     // Localized arrays
     comparePair localInputArray[ListSize];
-    comparePair localFinalArray[ListSize];
+    comparePair localFinalArray[ListSize + 1];
 #pragma HLS ARRAY_PARTITION variable=localFinalArray complete dim=1
-#pragma HLS RESOURCE variable=localFinalArray core=RAM_2P_BRAM
 
     // Copy into local array
-    memcpy(localInputArray, workingArray, (inputSize * ComparePairSize));
+    for(int16_t workingArrayPos = 0; workingArrayPos < inputSize; workingArrayPos++){
+#pragma HLS UNROLL
+        localInputArray[workingArrayPos] = workingArray[workingArrayPos];
+    }
 
     // Handle first value
-    localFinalArray[0] = localInputArray[0];
+    localFinalArray[0].key = INT16_MIN;
+    localFinalArray[0].data = INT64_MIN;
+
+    localFinalArray[1] = localInputArray[0];
 
     for (int16_t inputNumber = 1; inputNumber < inputSize; inputNumber++){
         // Loop through the input array and read each value to insert into the sorted list
 
         // Put our working value into a register
         comparePair inputPair = localInputArray[inputNumber];
+        printf("\nAdding to final sorted list key %i with value %i", localInputArray[inputNumber].key, localInputArray[inputNumber].data);
 
-        for(int16_t finalListSlot = (ListSize-1); finalListSlot >= 0; finalListSlot--){
+        for(int16_t finalListSlot = ListSize; finalListSlot > 0; finalListSlot--){
 #pragma HLS UNROLL
             // Parallel read of all values in the finalized list
 
             // Put all working values into registers
             comparePair finalSlotValueAbove;
-            if (finalListSlot == 0){
-                finalSlotValueAbove.data = 0;
-            } else {
-                finalSlotValueAbove = localFinalArray[finalListSlot - 1];
-            }
+            finalSlotValueAbove = localFinalArray[finalListSlot - 1];
             comparePair finalSlotValue = localFinalArray[finalListSlot];
             comparePair finalSlotValueNew = finalSlotValue;
 
@@ -138,7 +140,11 @@ void hlsLinearSort(comparePair * workingArray, int16_t inputSize){
     }
 
     // Copy back into passed in array
-    memcpy(workingArray, localFinalArray, (inputSize * ComparePairSize));
+    //memcpy(workingArray, localFinalArray + 1, (inputSize * ComparePairSize));
+    for(int16_t workingArrayPos = 0; workingArrayPos < inputSize; workingArrayPos++){
+#pragma HLS UNROLL
+        workingArray[workingArrayPos] = localFinalArray[workingArrayPos + 1];
+    }
 }
 
 /*
@@ -148,5 +154,5 @@ bool hlsArrayCellIsEmpty(int16_t curSlot, int16_t inputPos){
     if(curSlot < 0){
         return false;
     }
-    return (curSlot >= inputPos);
+    return (curSlot >= inputPos + 1);
 }
