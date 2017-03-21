@@ -141,9 +141,9 @@ void hlsLinearSort(comparePair * workingArray, int16_t inputSize){
 
     // Copy back into passed in array
     //memcpy(workingArray, localFinalArray + 1, (inputSize * ComparePairSize));
-    for(int16_t workingArrayPos = 0; workingArrayPos < inputSize; workingArrayPos++){
+    for(int16_t workingArrayPosFin = 0; workingArrayPosFin < inputSize; workingArrayPosFin++){
 #pragma HLS UNROLL
-        workingArray[workingArrayPos] = localFinalArray[workingArrayPos + 1];
+        workingArray[workingArrayPosFin] = localFinalArray[workingArrayPosFin + 1];
     }
 }
 
