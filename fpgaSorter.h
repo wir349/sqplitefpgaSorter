@@ -1,10 +1,14 @@
+//
+// Created by Krittercon on 3/12/2017.
+//
+
 #ifndef SQLPROJECT_FPGASORTER_H
 #define SQLPROJECT_FPGASORTER_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ListSize 400
+#define ListSize 500
 
 #define KeySize sizeof(int16_t)
 #define DataSize sizeof(int64_t)
@@ -18,12 +22,11 @@ typedef struct{
 //----------------------------------------------------------------
 //  Forward declarations
 //----------------------------------------------------------------
-void merge_up(comparePair *arr, int16_t n);
-void merge_down(comparePair *arr, int16_t n);
-void fpgaSorterInitialize();
+void fpgaSorterInitialize(int sortSize);
 void fpgaSorterInsert(int key, char * data, int size);
 void fpgaSorterSortLinear();
 int fpgaSorterGetLinearResultNext();
 void hlsLinearSort(comparePair * workingArray, int16_t inputSize);
+bool hlsArrayCellIsEmpty(int16_t curSlot, int16_t inputPos);
 
 #endif //SQLPROJECT_FPGASORTER_H
