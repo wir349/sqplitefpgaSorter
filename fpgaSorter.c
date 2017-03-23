@@ -108,7 +108,7 @@ void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
         if(remainingEntries > ListSize) {
             // Input exceeds list size, only pull in as much as we can
             for (int16_t workingArrayPos = 0; workingArrayPos < ListSize; workingArrayPos++) {
-#pragma HLS UNROLL
+#pragma HLS PIPELINE
                 localInputArray[workingArrayPos] = workingArray[workingArrayPos + (loopIteration * ListSize)];
             }
             currentListSize = ListSize;
@@ -184,7 +184,7 @@ void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
         if(remainingEntries > ListSize) {
             // Input exceeds list size, only pull in as much as we can
             for (int16_t workingArrayPos = 0; workingArrayPos < ListSize; workingArrayPos++) {
-#pragma HLS UNROLL
+#pragma HLS PIPELINE
                 workingArray[workingArrayPos + (loopIteration * ListSize)] = localFinalArray[workingArrayPos + 1];
             }
         } else {
