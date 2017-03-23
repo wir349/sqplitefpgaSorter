@@ -26,6 +26,7 @@ void fpgaSorterInitialize(int sortSize) {
         workingArrayLinearReadPos = 0;
 
         maxSize = sortSize;
+        //DISABLED UNTIL MALLOC IS SORTED
         //workingArrayLinear = (comparePair*) malloc(sortSize * ComparePairSize);
 
         initialized = true;
@@ -36,15 +37,10 @@ void fpgaSorterInitialize(int sortSize) {
  *  Adds an entry
  */
 void fpgaSorterInsert(int key, char *data, int size) {
-//    Removed limiter
-//    if(workingArrayLinearSize > ListSize){
-//        return;
-//    }
 
     if (!initialized) {
-        printf("\nCannot sort: Sort size not initialized");
+        //printf("\nCannot sort: Sort size not initialized");
         return;
-        //fpgaSorterInitialize();
     }
 
     //DEBUG
@@ -55,15 +51,41 @@ void fpgaSorterInsert(int key, char *data, int size) {
 
     //DEBUG
     workingArrayLinear[workingArrayLinearSize].data = rand();
-    //workingArrayLinear[workingArrayLinearSize].data = workingArrayLinearSize;
-    printf("\nAdding key %i with value %i", key, workingArrayLinear[workingArrayLinearSize].data);
 
     workingArrayLinearSize++;
 }
 
 void fpgaSorterSortLinear() {
     if (!isSorted) {
-        hlsLinearSort(workingArrayLinear, workingArrayLinearSize);
+        int remainingToSort = workingArrayLinearSize;
+        int loopIteration = 0;
+        comparePair arrayToSort[ListSize];
+
+        while (remainingToSort > 0) {
+            if (remainingToSort > ListSize){
+                for (int workingArrayPos1 = 0; workingArrayPos1 < ListSize; workingArrayPos1++) {
+                    arrayToSort[workingArrayPos1] = workingArrayLinear[workingArrayPos1 + (loopIteration * ListSize)];
+                }
+                hlsLinearSort(arrayToSort,ListSize);
+                for (int workingArrayPos2 = 0; workingArrayPos2 < ListSize; workingArrayPos2++) {
+                    workingArrayLinear[workingArrayPos2 + (loopIteration * ListSize)] = arrayToSort[workingArrayPos2];
+                }
+                remainingToSort -= ListSize;
+            } else {
+                for (int workingArrayPos3 = 0; workingArrayPos3 < remainingToSort; workingArrayPos3++) {
+                    arrayToSort[workingArrayPos3] = workingArrayLinear[workingArrayPos3 + (loopIteration * ListSize)];
+                }
+                hlsLinearSort(arrayToSort,remainingToSort);
+                for (int workingArrayPos4 = 0; workingArrayPos4 < remainingToSort; workingArrayPos4++) {
+                    workingArrayLinear[workingArrayPos4 + (loopIteration * ListSize)] = arrayToSort[workingArrayPos4];
+                }
+                remainingToSort = 0;
+            }
+            loopIteration++;
+        }
+
+
+        //hlsLinearSort(workingArrayLinear, workingArrayLinearSize);
         isSorted = true;
     }
 }
@@ -93,39 +115,17 @@ void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
 #pragma HLS INTERFACE s_axilite port=inputSize bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-    // Localized counters
-    int16_t remainingEntries = inputSize;
-    int16_t currentListSize;
-    int16_t loopIteration = 0;
-
     // Localized arrays
     comparePair localInputArray[ListSize];
     comparePair localFinalArray[ListSize + 1];
 #pragma HLS ARRAY_PARTITION variable=localFinalArray complete dim=1
 
-    while (remainingEntries > 0) {
-
-        if(remainingEntries > ListSize) {
-            // Input exceeds list size, only pull in as much as we can
-            for (int16_t workingArrayPos = 0; workingArrayPos < ListSize; workingArrayPos++) {
-#pragma HLS UNROLL
-                localInputArray[workingArrayPos] = workingArray[workingArrayPos + (loopIteration * ListSize)];
-            }
-            currentListSize = ListSize;
-        } else {
-            // Input fits into list size, put all into sorting
-            for (int16_t workingArrayPos = 0; workingArrayPos < remainingEntries; workingArrayPos++) {
-#pragma HLS PIPELINE
-                localInputArray[workingArrayPos] = workingArray[workingArrayPos + (loopIteration * ListSize)];
-            }
-            currentListSize = remainingEntries;
-        }
 
         // Copy into local array
-        /*for (int16_t workingArrayPos = 0; workingArrayPos < inputSize; workingArrayPos++) {
+        for (int16_t workingArrayPosA = 0; workingArrayPosA < inputSize; workingArrayPosA++) {
 #pragma HLS PIPELINE
-            localInputArray[workingArrayPos] = workingArray[workingArrayPos];
-        }*/
+            localInputArray[workingArrayPosA] = workingArray[workingArrayPosA];
+        }
 
 
         // Dummy value
@@ -134,14 +134,12 @@ void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
         // Handle first values
         localFinalArray[1] = localInputArray[0];
 
-        //for (int16_t inputNumber = 1; inputNumber < inputSize; inputNumber++) {
-        for (int16_t inputNumber = 1; inputNumber < currentListSize; inputNumber++) {
+        for (int16_t inputNumber = 1; inputNumber < inputSize; inputNumber++) {
             // Loop through the input array and read each value to insert into the sorted list
 
             // Put our working value into a register
             comparePair inputPair = localInputArray[inputNumber];
-            printf("\nAdding to final sorted list key %i with value %i", localInputArray[inputNumber].key,
-                   localInputArray[inputNumber].data);
+
 
             for (int16_t finalListSlot = ListSize; finalListSlot > 0; finalListSlot--) {
 #pragma HLS UNROLL
@@ -181,31 +179,13 @@ void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
 
         }
 
-        if(remainingEntries > ListSize) {
-            // Input exceeds list size, only pull in as much as we can
-            for (int16_t workingArrayPos = 0; workingArrayPos < ListSize; workingArrayPos++) {
-#pragma HLS UNROLL
-                workingArray[workingArrayPos + (loopIteration * ListSize)] = localFinalArray[workingArrayPos + 1];
-            }
-        } else {
-            // Input fits into list size, put all into sorting
-            for (int16_t workingArrayPos = 0; workingArrayPos < remainingEntries; workingArrayPos++) {
+        // Copy back into passed in array
+        for (int16_t workingArrayPosB = 0; workingArrayPosB < inputSize; workingArrayPosB++) {
 #pragma HLS PIPELINE
-                workingArray[workingArrayPos + (loopIteration * ListSize)] = localFinalArray[workingArrayPos + 1];
-            }
+            workingArray[workingArrayPosB] = localFinalArray[workingArrayPosB + 1];
         }
 
-        remainingEntries -= currentListSize;
-        loopIteration++;
-
-        // Copy back into passed in array
-        //memcpy(workingArray, localFinalArray + 1, (inputSize * ComparePairSize));
-        /*for (int16_t workingArrayPos = 0; workingArrayPos < inputSize; workingArrayPos++) {
-#pragma HLS PIPELINE
-            workingArray[workingArrayPos] = localFinalArray[workingArrayPos + 1];
-        }*/
-
-    }
+    //}
 }
 
 /*
