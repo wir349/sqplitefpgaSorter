@@ -10,7 +10,7 @@
 
 bool initialized;
 bool isSorted;
-comparePair workingArrayLinear[ListSize * 2];
+ComparePair* workingArrayLinear;
 //comparePair * workingArrayLinear;
 int maxSize;
 int workingArrayLinearSize;
@@ -27,7 +27,7 @@ void fpgaSorterInitialize(int sortSize) {
 
         maxSize = sortSize;
         //DISABLED UNTIL MALLOC IS SORTED
-        //workingArrayLinear = (comparePair*) malloc(sortSize * ComparePairSize);
+        workingArrayLinear = (ComparePair*) malloc(sortSize * sizeof(ComparePair));
 
         initialized = true;
     }
@@ -59,7 +59,7 @@ void fpgaSorterSortLinear() {
     if (!isSorted) {
         int remainingToSort = workingArrayLinearSize;
         int loopIteration = 0;
-        comparePair arrayToSort[ListSize];
+        ComparePair arrayToSort[ListSize];
 
         while (remainingToSort > 0) {
             if (remainingToSort > ListSize){
@@ -95,7 +95,7 @@ int fpgaSorterGetLinearResultNext() {
         workingArrayLinearReadPos++;
 
         //DEBUG
-        printf("\nReturning key %i with value %i", workingArrayLinear[workingArrayLinearReadPos - 1].key,
+        printf("\nReturning key %hd with value %lld", workingArrayLinear[workingArrayLinearReadPos - 1].key,
                workingArrayLinear[workingArrayLinearReadPos - 1].data);
 
         return workingArrayLinear[workingArrayLinearReadPos - 1].key;
@@ -109,15 +109,15 @@ int fpgaSorterGetLinearResultNext() {
  * Sorts in groups of ListSize
  * Output should be read in batches of ListSize
  */
-void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
+void hlsLinearSort(ComparePair *workingArray, int16_t inputSize) {
 #pragma HLS INTERFACE m_axi port=workingArray bundle=gmem
 #pragma HLS INTERFACE s_axilite port=workingArray bundle=control
 #pragma HLS INTERFACE s_axilite port=inputSize bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
     // Localized arrays
-    comparePair localInputArray[ListSize];
-    comparePair localFinalArray[ListSize + 1];
+    ComparePair localInputArray[ListSize];
+    ComparePair localFinalArray[ListSize + 1];
 #pragma HLS ARRAY_PARTITION variable=localFinalArray complete dim=1
 
 
@@ -138,7 +138,7 @@ void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
             // Loop through the input array and read each value to insert into the sorted list
 
             // Put our working value into a register
-            comparePair inputPair = localInputArray[inputNumber];
+            ComparePair inputPair = localInputArray[inputNumber];
 
 
             for (int16_t finalListSlot = ListSize; finalListSlot > 0; finalListSlot--) {
@@ -146,10 +146,10 @@ void hlsLinearSort(comparePair *workingArray, int16_t inputSize) {
                 // Parallel read of all values in the finalized list
 
                 // Put all working values into registers
-                comparePair finalSlotValueAbove;
+                ComparePair finalSlotValueAbove;
                 finalSlotValueAbove = localFinalArray[finalListSlot - 1];
-                comparePair finalSlotValue = localFinalArray[finalListSlot];
-                comparePair finalSlotValueNew = finalSlotValue;
+                ComparePair finalSlotValue = localFinalArray[finalListSlot];
+                ComparePair finalSlotValueNew = finalSlotValue;
 
                 if (hlsArrayCellIsEmpty(finalListSlot, inputNumber) &&
                     (!hlsArrayCellIsEmpty((finalListSlot - 1), inputNumber))) {

@@ -12,12 +12,12 @@
 
 #define KeySize sizeof(int16_t)
 #define DataSize sizeof(int64_t)
-#define ComparePairSize (KeySize + DataSize)
+//#define ComparePairSize (KeySize + DataSize)
 
 typedef struct{
     int16_t key;
     int64_t data;
-} comparePair;
+} ComparePair;
 
 //----------------------------------------------------------------
 //  Forward declarations
@@ -26,7 +26,7 @@ void fpgaSorterInitialize(int sortSize);
 void fpgaSorterInsert(int key, char * data, int size);
 void fpgaSorterSortLinear();
 int fpgaSorterGetLinearResultNext();
-void hlsLinearSort(comparePair * workingArray, int16_t inputSize);
+void hlsLinearSort(ComparePair * workingArray, int16_t inputSize);
 bool hlsArrayCellIsEmpty(int16_t curSlot, int16_t inputPos);
 
 #endif //SQLPROJECT_FPGASORTER_H
