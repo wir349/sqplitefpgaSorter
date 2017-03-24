@@ -111,7 +111,7 @@ void hlsLinearSort(ComparePair *workingArray, int16_t inputSize) {
     }
 
     printf("\nStarting sorting loop");
-    for(int i=0;i<9;i++) {
+    for(int i=0;i<LogListSize;i++) {
         for(int j=0;j<=i;j++) {
             kernel(localFinalArray, i, j);
         }
