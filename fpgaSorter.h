@@ -8,7 +8,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ListSize 512
+#define ListSize 16
+#define LogListSize 4
 
 #define KeySize sizeof(int16_t)
 #define DataSize sizeof(int64_t)
